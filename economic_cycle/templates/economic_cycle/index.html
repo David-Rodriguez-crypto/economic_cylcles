@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Análisis del Ciclo Económico</title>
+
+
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1d3557, #457b9d, #a8dadc);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .18);
+        }
+
+        .card-header {
+            background: #1d3557;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 20px 20px 0 0 !important;
+        }
+
+        .card-body {
+            padding: 35px;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .form-control:focus {
+            border-color: #457b9d;
+            box-shadow: 0 0 10px rgba(69, 123, 157, .4);
+        }
+
+        .btn-analizar {
+            background: linear-gradient(45deg, #06d6a0, #118ab2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 12px;
+            transition: .3s;
+        }
+
+        .btn-analizar:hover {
+            transform: scale(1.03);
+        }
+
+        .btn-volver {
+            background: #1d3557;
+            color: white;
+            border-radius: 12px;
+            text-decoration: none;
+            padding: 10px 18px;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: .3s;
+        }
+
+        .btn-volver:hover {
+            background: #274c77;
+            color: white;
+        }
+
+        .info {
+            background: #eef7ff;
+            border-left: 5px solid #118ab2;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="row justify-content-center">
+
+            <div class="col-lg-7">
+
+                <a href="/" class="btn-volver">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Volver al menú
+                </a>
+
+                <div class="card">
+
+                    <div class="card-header">
+
+                        <i class="fa-solid fa-chart-line"></i>
+
+                        Análisis del Ciclo Económico
+
+                    </div>
+
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+
+                        {% if messages %}
+
+                        {% for category, message in messages %}
+
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+
+                            {% if category == 'success' %}
+                            <i class="fa-solid fa-circle-check"></i>
+                            {% else %}
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            {% endif %}
+
+                            {{ message }}
+
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar">
+                            </button>
+
+                        </div>
+
+                        {% endfor %}
+
+                        {% endif %}
+
+                        {% endwith %}
+
+                        <div class="info">
+
+                            <i class="fa-solid fa-circle-info"></i>
+
+                            Seleccione un archivo con los datos económicos para analizar el comportamiento del ciclo
+                            económico y generar los resultados automáticamente.
+                            <div class="card mt-4">
+
+                                <div class="card-body text-center">
+                                    <h4>
+                                        <i class="fa-solid fa-file-excel text-success"></i>
+                                        ¿No sabes cómo preparar tu Excel?
+                                    </h4>
+
+                                    <p class="text-muted">
+                                        Descarga nuestra plantilla y reemplaza los datos de ejemplo
+                                        con tus propios datos.
+                                    </p>
+
+                                    <a href="{{ url_for('economic_cycle.download_template') }}" class="btn btn-success">
+
+                                        <i class="fa-solid fa-download"></i>
+                                        Descargar plantilla Excel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ============================= -->
+                        <!-- SELECCIÓN DEL PAÍS -->
+                        <!-- ============================= -->
+                        <form method="POST" action="{{ url_for('economic_cycle.analyze_country') }}">
+
+                            <label for="country_id" class="fw-bold mb-2">
+
+                                <i class="fa-solid fa-earth-americas"></i>
+
+                                Seleccionar país
+
+                            </label>
+                            <select class="form-control mb-4" name="country_id" id="country_id" required>
+                                <option value="">
+
+                                    -- Seleccione un país --
+
+                                </option>
+
+                                {% for country in countries %}
+
+                                <option value="{{ country.id }}">
+
+                                    {{ country.name }}
+                                    ({{ country.code }})
+
+                                </option>
+
+                                {% endfor %}
+                            </select>
+
+                            <button class="btn btn-analizar w-100" type="submit">
+                                <i class="fa-solid fa-chart-line"></i>
+                                Analizar país
+                            </button>
+
+
+                        </form>
+
+                        <hr class="my-4">
+
+                        <!-- ============================= -->
+                        <!-- FORMULARIO EXCEL ANTIGUO -->
+                        <!-- ============================= -->
+
+
+                        <form action="{{ url_for('economic_cycle.analyze') }}" method="POST"
+                            enctype="multipart/form-data">
+
+                            <label for="archivo_excel" class="fw-bold mb-2">
+                                <i class="fa-solid fa-file-excel"></i>
+                                Seleccionar archivo Excel o CSV
+                            </label>
+
+                            <input class="form-control mb-4" type="file" id="archivo_excel" name="file"
+                                accept=".xlsx,.xls,.csv" required>
+
+                            <button class="btn btn-analizar w-100" type="submit">
+                                <i class="fa-solid fa-magnifying-glass-chart"></i>
+                                Analizar Archivo
+                            </button>
+
+                        </form>
+
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

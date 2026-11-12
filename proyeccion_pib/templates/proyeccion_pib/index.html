@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <title>Proyección del PIB</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1d3557, #457b9d, #a8dadc);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .titulo {
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .18);
+        }
+
+        .card-header {
+            background: #1d3557;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 20px 20px 0 0 !important;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #457b9d;
+            box-shadow: 0 0 10px rgba(69, 123, 157, .4);
+        }
+
+        .btn-calcular {
+            background: linear-gradient(45deg, #06d6a0, #118ab2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 12px;
+            transition: .3s;
+        }
+
+        .btn-calcular:hover {
+            transform: scale(1.03);
+        }
+
+        .alert-formula {
+            background: white;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1d3557;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
+        }
+
+        .resumen {
+            background: linear-gradient(45deg, #06d6a0, #38b000);
+            color: white;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .table thead {
+            background: #1d3557;
+            color: white;
+        }
+
+        .table {
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        canvas {
+            max-height: 420px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container py-4">
+
+        <h1 class="titulo">
+            <i class="fa-solid fa-chart-line"></i>
+            Proyección del Producto Interno Bruto
+        </h1>
+        <a href="/" class="btn btn-secondary mb-3">
+            ⬅ Volver al menú
+        </a>
+
+        <div class="alert-formula p-3 mb-4">
+            Calcula la proyección del PIB utilizando el crecimiento promedio histórico.
+        </div>
+
+        <div class="card">
+
+            <div class="card-header">
+                <i class="fa-solid fa-calculator"></i>
+                Ingresar información
+            </div>
+
+            <div class="card-body">
+
+                <form method="POST">
+
+                    <div class="mb-4">
+
+                        <label class="fw-bold">
+                            Cantidad de años históricos
+                        </label>
+
+                        <select class="form-select" name="num_years" onchange="this.form.submit()">
+
+                            {% for i in range(2,11) %}
+
+                            <option value="{{i}}" {% if request.form.get('num_years','3')|int==i %} selected {% endif
+                                %}>
+
+                                {{i}}
+
+                            </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    {% set cantidad=request.form.get('num_years','3')|int %}
+
+                    {% for i in range(cantidad) %}
+
+                    <div class="row mb-3">
+
+                        <div class="col-md-6">
+
+                            <label class="fw-bold">
+                                Año {{i+1}}
+                            </label>
+
+                            <input class="form-control" type="number" name="year_{{i}}" value="{{2020+i}}">
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="fw-bold">
+                                PIB
+                            </label>
+
+                            <input class="form-control" type="number" step="0.01" name="gdp_{{i}}"
+                                value="{{100+(i*10)}}">
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                    <button class="btn btn-calcular w-100" type="submit" name="accion" value="calcular">
+
+                        <i class="fa-solid fa-chart-column"></i>
+
+                        Calcular Proyección
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        {% if resultados %}
+
+        <div class="resumen mt-4">
+
+            <h3>
+
+                <i class="fa-solid fa-arrow-trend-up"></i>
+
+                Proyección completada
+
+            </h3>
+
+            <h5>
+
+                Crecimiento promedio:
+                <strong>{{resultados.average_growth}}%</strong>
+
+            </h5>
+
+            <h2>
+
+                PIB {{resultados.next_year}}
+
+            </h2>
+
+            <h1>
+
+                {{"{:,.2f}".format(resultados.projected_gdp)}}
+
+            </h1>
+
+        </div>
+
+        <div class="card mt-4">
+
+            <div class="card-header">
+
+                <i class="fa-solid fa-table"></i>
+
+                Historial del PIB
+
+            </div>
+
+            <div class="card-body">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Año</th>
+
+                            <th>PIB</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for fila in resultados.tabla %}
+
+                        <tr>
+
+                            <td>{{fila['Año']}}</td>
+
+                            <td>{{"{:,.2f}".format(fila['PIB'])}}</td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+        <div class="card mt-4">
+
+            <div class="card-header">
+
+                <i class="fa-solid fa-chart-line"></i>
+
+                Evolución del PIB
+
+            </div>
+
+            <div class="card-body">
+
+                <canvas id="lineChart"></canvas>
+
+            </div>
+
+        </div>
+
+        <script>
+
+            const years = {{ resultados.chart_years| tojson }};
+            const values = {{ resultados.chart_values| tojson }};
+
+            new Chart(document.getElementById("lineChart"), {
+
+                type: "line",
+
+                data: {
+
+                    labels: years,
+
+                    datasets: [{
+
+                        label: "PIB",
+
+                        data: values,
+
+                        borderColor: "#06d6a0",
+
+                        backgroundColor: "rgba(6,214,160,.20)",
+
+                        fill: true,
+
+                        tension: .35,
+
+                        pointRadius: 5,
+
+                        pointBackgroundColor: "#118ab2",
+
+                        borderWidth: 4
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    plugins: {
+
+                        legend: {
+
+                            position: "top"
+
+                        }
+
+                    }
+
+                }
+
+            });
+
+        </script>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora del PIB</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1d3557, #457b9d, #a8dadc);
+            min-height: 100vh;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .titulo {
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .18);
+        }
+
+        .card-header {
+            background: #1d3557;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 20px 20px 0 0 !important;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            padding: 10px;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 10px rgba(69, 123, 157, .5);
+            border-color: #457b9d;
+        }
+
+        .btn-calcular {
+            background: linear-gradient(45deg, #06d6a0, #118ab2);
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            padding: 12px;
+            transition: .3s;
+        }
+
+        .btn-calcular:hover {
+            transform: scale(1.03);
+        }
+
+        .resultado {
+            background: linear-gradient(45deg, #06d6a0, #38b000);
+            color: white;
+            border-radius: 20px;
+            text-align: center;
+            padding: 25px;
+        }
+
+        .resultado h1 {
+            font-size: 55px;
+            font-weight: bold;
+        }
+
+        canvas {
+            max-height: 360px;
+        }
+
+        .alert-formula {
+            background: white;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1d3557;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .1);
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container py-4">
+
+        <h1 class="titulo">
+            <i class="fa-solid fa-chart-column"></i>
+            Calculadora del Producto Interno Bruto
+        </h1>
+        <a href="/" class="btn btn-secondary mb-3">
+            ⬅ Volver al menú
+        </a>
+
+        <div class="alert-formula p-3 mb-4">
+            PIB = C + I + G + (X − M)
+        </div>
+
+        <div class="row">
+
+            <div class="col-lg-4">
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <i class="fa-solid fa-calculator"></i>
+                        Ingresar Datos
+                    </div>
+
+                    <div class="card-body">
+
+                        <form method="POST">
+
+                            <label class="fw-bold">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                                Consumo (C)
+                            </label>
+
+                            <input class="form-control mb-3" name="consumo" type="number" step="0.01" value="500">
+
+                            <label class="fw-bold">
+                                <i class="fa-solid fa-building-columns"></i>
+                                Inversión (I)
+                            </label>
+
+                            <input class="form-control mb-3" name="inversion" type="number" step="0.01" value="200">
+
+                            <label class="fw-bold">
+                                <i class="fa-solid fa-landmark"></i>
+                                Gasto Público (G)
+                            </label>
+
+                            <input class="form-control mb-3" name="gasto" type="number" step="0.01" value="300">
+
+                            <label class="fw-bold">
+                                <i class="fa-solid fa-arrow-up-right-dots"></i>
+                                Exportaciones (X)
+                            </label>
+
+                            <input class="form-control mb-3" name="exportaciones" type="number" step="0.01" value="150">
+
+                            <label class="fw-bold">
+                                <i class="fa-solid fa-arrow-down"></i>
+                                Importaciones (M)
+                            </label>
+
+                            <input class="form-control mb-4" name="importaciones" type="number" step="0.01" value="100">
+
+                            <button class="btn btn-calcular w-100">
+                                <i class="fa-solid fa-play"></i>
+                                Calcular PIB
+                            </button>
+
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-lg-8">
+
+                {% if datos %}
+
+                <div class="resultado mb-4">
+
+                    <h4>PIB TOTAL</h4>
+
+                    <h1>
+                        $ {{ "{:,.2f}".format(datos.pib) }}
+                    </h1>
+
+                    <p class="mb-0">
+                        {{ datos.texto }}
+                    </p>
+
+                </div>
+
+                <div class="card mb-4">
+
+                    <div class="card-header">
+                        <i class="fa-solid fa-chart-column"></i>
+                        Gráfico de Barras
+                    </div>
+
+                    <div class="card-body">
+                        <canvas id="barChart"></canvas>
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <div class="card-header">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        Distribución del PIB
+                    </div>
+
+                    <div class="card-body">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% if datos %}
+
+    <script>
+
+        const categorias = {{ datos.categorias| tojson }};
+        const valores = {{ datos.valores| tojson }};
+
+        const colores = [
+            "#3A86FF",
+            "#06D6A0",
+            "#FFD166",
+            "#EF476F",
+            "#8338EC"
+        ];
+
+        new Chart(document.getElementById("barChart"), {
+
+            type: "bar",
+
+            data: {
+                labels: categorias,
+
+                datasets: [{
+
+                    label: "Valor",
+
+                    data: valores,
+
+                    backgroundColor: colores,
+
+                    borderRadius: 10
+
+                }]
+            },
+
+            options: {
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                responsive: true
+            }
+
+        });
+
+        new Chart(document.getElementById("pieChart"), {
+
+            type: "doughnut",
+
+            data: {
+
+                labels: categorias,
+
+                datasets: [{
+
+                    data: valores,
+
+                    backgroundColor: colores
+
+                }]
+
+            },
+
+            options: {
+
+                plugins: {
+
+                    legend: {
+
+                        position: "bottom"
+
+                    }
+
+                }
+
+            }
+
+        });
+
+    </script>
+
+    {% endif %}
+
+</body>
+
+</html>
