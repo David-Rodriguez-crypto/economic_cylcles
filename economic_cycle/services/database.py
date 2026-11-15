@@ -2,6 +2,7 @@
 import os
 import mysql.connector
 from dotenv import load_dotenv
+import tempfile
 
 load_dotenv()
 
@@ -17,8 +18,25 @@ def get_connection():
         "connection_timeout": 20
     }
 
-    ca_path = os.environ.get("TIDB_SSL_CA")
+    ca_value = (
+        os.environ.get("TIDB_SSL_CA_CONTENT")
+        or os.environ.get("TIDB_SSL_CA")
+    )
+    if ca_value:
+        if os.path.isfile(ca_value):
+            ca_path = ca_value
+        else:
+            ca_path = os.path.join(
+                tempfile.gettempdir(),
+                "tidb-ca.pem"
+            )
 
+            with open(ca_path, "w", encoding="utf-8") as cert_file:
+                cert_file.write(ca_value.strip() + "\n")
+
+        config["ssl_ca"] = ca_path
+        config["ssl_verify_cert"] = True
+        config["ssl_verify_identity"] = True
     if ca_path:
         config["ssl_ca"] = ca_path
         config["ssl_verify_cert"] = True
@@ -75,10 +93,25 @@ def save_gdp(country_id, year, value):
     cursor = connection.cursor()
 
     try:
+        # Reservar un identificador nuevo
         cursor.execute("""
-            INSERT INTO gdp_data (country_id, year, value)
-            VALUES (%s, %s, %s)
-        """, (country_id, year, value))
+            UPDATE id_sequences
+            SET next_id = next_id + 1
+            WHERE name = 'gdp_data'
+        """)
+
+        cursor.execute("""
+            SELECT next_id
+            FROM id_sequences
+            WHERE name = 'gdp_data'
+        """)
+
+        new_id = cursor.fetchone()[0]
+
+        cursor.execute("""
+            INSERT INTO gdp_data (id, country_id, year, value)
+            VALUES (%s, %s, %s, %s)
+        """, (new_id, country_id, year, value))
 
         connection.commit()
 
@@ -113,17 +146,40 @@ def get_gdp_by_country(country_id):
 
 def save_gdp_bulk(country_id, records):
 
+    records = list(records)
+
+    if not records:
+        return
+
     connection = get_connection()
     cursor = connection.cursor()
 
     try:
+        # Reservar todos los identificadores necesarios
+        cursor.execute("""
+            UPDATE id_sequences
+            SET next_id = next_id + %s
+            WHERE name = 'gdp_data'
+        """, (len(records),))
+
+        cursor.execute("""
+            SELECT next_id
+            FROM id_sequences
+            WHERE name = 'gdp_data'
+        """)
+
+        last_id = cursor.fetchone()[0]
+        first_id = last_id - len(records) + 1
+
+        data = [
+            (first_id + i, country_id, year, value)
+            for i, (year, value) in enumerate(records)
+        ]
+
         cursor.executemany("""
-            INSERT INTO gdp_data (country_id, year, value)
-            VALUES (%s, %s, %s)
-        """, [
-            (country_id, year, value)
-            for year, value in records
-        ])
+            INSERT INTO gdp_data (id, country_id, year, value)
+            VALUES (%s, %s, %s, %s)
+        """, data)
 
         connection.commit()
 
@@ -134,6 +190,7 @@ def save_gdp_bulk(country_id, records):
     finally:
         cursor.close()
         connection.close()
+
 
 
 def get_or_create_country(name, code):
